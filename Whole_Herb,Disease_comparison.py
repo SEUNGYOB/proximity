@@ -24,7 +24,7 @@ def Whole_herb_disease_comparison():
             sample_list.append(total_prox_list)
             total_prox_table=pd.DataFrame(sample_list, columns= ["Herb_name", "Disease_code","Proximity_score"])
     # print(total_prox_table.head(2))
-    total_prox_table.to_csv("_HERB_Sarcopenia_Proximity_total.csv", index= False)
+    total_prox_table.to_csv("_HERB_Sarcopenia_Proximity_total.csv", index= False, encoding= 'cp949')
     return
 """리소스 투입이 많이 필요함"""
 Whole_herb_disease_comparison()

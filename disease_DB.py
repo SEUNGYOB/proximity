@@ -2,7 +2,16 @@ import sqlite3
 import pandas as pd
 import network_construction_from_string
 import time
-def disgenet_SQL_Datafrme_NID(_C_code_of_disease):
+
+def getting_disease_type_disgenet():
+    data = pd.read_csv("./Data/Disease/disease_associations.csv")
+    # condition = (data.diseaseType=="disease") & ( data.NofGenes > 300)
+    data_1 = data["diseaseId"]
+
+    disease_list_disgenet = data_1.tolist()
+    return disease_list_disgenet
+"""list type으로 disgenet에 존재하는 "disease"로 분류된 질병 코드를 반환(CXXXXXXX 형식), NofGenes 가 300개 초과인 것들 """
+def disgenet_SQL_Datafrme_NID():
 
     """엑셀로 저장"""
     conn = sqlite3.connect("./Data/Disease/disgenet_2020.db")
@@ -29,12 +38,14 @@ def disgenet_SQL_Datafrme_NID(_C_code_of_disease):
     #     data_df_wanted_list = data_df_wanted_C_to_N["diseaseNID"].tolist()
     #     data_df_wanted_list_1.extend(data_df_wanted_list)
     # data_df_wanted_list = list(set(data_df_wanted_list_1))
-    df_trash.to_excel("disease_index(Id_to_NID).xls")
-    diseaseNID = df_trash.loc[df_trash.diseaseId == _C_code_of_disease]["diseaseNID"]
+    df_trash.to_excel("disease_index(Id_to_NID).xlsx")
+    # diseaseNID = df_trash.loc[df_trash.diseaseId == _C_code_of_disease]["diseaseNID"]
 
     conn.close ()
     return
-"""역할을 다 한 함수 disease_index(Id_to_NID).xls 생성"""
+"""역할을 다 한 함수 disease_index(Id_to_NID).xlsx 생성"""
+
+disgenet_SQL_Datafrme_NID()
 def geneNID_to_gene_excel():
     conn = sqlite3.connect ("./Data/Disease/disgenet_2020.db")
     cur = conn.cursor ()
@@ -45,16 +56,8 @@ def geneNID_to_gene_excel():
     data_df = pd.DataFrame.from_records (data=rows, columns=cols)
     data_df.to_excel("gene_attribution.xls")
 """역할을 다 한 함수(gene_attribution.xls) 생성. geneNID -> Gene name"""
-def getting_disease_type_disgenet():
-    data = pd.read_csv("./Data/Disease/disease_associations.csv")
-    condition = (data.diseaseType=="disease") & ( data.NofGenes > 300)
-    data_1 = data.loc[condition]["diseaseId"]
 
-    disease_list_disgenet = data_1.tolist()
-    return disease_list_disgenet
-"""list type으로 disgenet에 존재하는 "disease"로 분류된 질병 코드를 반환(CXXXXXXX 형식), NofGenes 가 300개 초과인 것들 """
-
-getting_disease_type_disgenet()
+# getting_disease_type_disgenet()
 def SQL_NID_to_gene_name(_C_code_disease):
     """disease NID 호출"""
     df_trash = pd.read_excel ("./Data/Disease/disease_index(Id_to_NID).xls")
@@ -105,11 +108,13 @@ def STRING_index_make_single_file():
     # print(protein_aliases.head(1))
     # print(len(protein_aliases), len(protein_raw_file),len(protein_aliases) + len(protein_raw_file) )
     whole_protein_list = pd.concat([protein_raw_file, protein_aliases], axis=0)
-    return whole_protein_list
-"""STRING DB에서는 alias등이 많아서 파일 2개 합쳐서 index dataframe 생성함,3905590개, excel 저장 안됨 """
-"""값을 2개 return 함. ENSP code와 error list """
+    whole_protein_list.drop_duplicates(inplace = True)
+    # print(len(whole_protein_list))
+    whole_protein_list.to_csv('protein_dict.csv')
+    return
+"""STRING DB에서는 alias등이 많아서 파일 2개 합쳐서 index dataframe 생성함,3905590개, CSV로 저장. 할일 끝 """
 def changing_Gene_name_to_ENSP_ID(_C_code_disease):
-    chemical_protein_index = STRING_index_make_single_file()
+    chemical_protein_index = pd.read_csv("./Data/Disease/protein_dict.csv")
     ENSP_code_of_protein = []
     Gene_error_list = []
     for Gene_names in SQL_NID_to_gene_name(_C_code_disease):

@@ -163,3 +163,5 @@ def calculate_closest_distance(network, nodes_from, nodes_to, lengths=None):
         # print d
     return d
 
+
+def Herb_node_checking

@@ -140,10 +140,10 @@ def LCC_network_proximity_calculate(herb, c_code_disease):
 #####시간 측정하는 함수 칸######
 start_time = time.time()
 # print(Herb_list("강활"))
-print(Disease_protein_list("C0872084"))
+# print(Disease_protein_list("C0872084"))
 # print(calculate_network_distance(Whole_network_construction(),get_LCC_Network_set (Herb_NETWORK ("강활")),get_LCC_Network_set (Disease_NETWORK ("C0409959"))))
 # print(get_LCC_Network_set(Herb_NETWORK("강활")))
-print(get_LCC_Network_set(Disease_NETWORK("C0872084")))
+# print(get_LCC_Network_set(Disease_NETWORK("C0872084")))
 
 # print(LCC_network_proximity_calculate("강활", "C0409959"))
 
