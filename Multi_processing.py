@@ -1,7 +1,7 @@
 from multiprocessing import (Pool)
-import HERB_DISEASE_netowrk_workspace
+import HERB_DISEASE_netowrk_workbookpy
 from itertools import permutations
-import HERB_DISEASE_netowrk_workspace
+import HERB_DISEASE_netowrk_workbookpy
 import pandas as pd
 
 whole_herb_name_df = pd.read_excel("./Data/Herb/KIOM_DB/medicinal_material.xlsx")
@@ -22,6 +22,6 @@ if __name__ == "__main__":
     # data = [(),(),()]
 
     with Pool(processes=cpu) as pool:
-        results = pool.map(HERB_DISEASE_netowrk_workspace.LCC_network_proximity_calculate, data)
+        results = pool.map(HERB_DISEASE_netowrk_workbookpy.LCC_network_proximity_calculate, data)
 
     print("Results:", results)

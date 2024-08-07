@@ -60,7 +60,7 @@ def geneNID_to_gene_excel():
 # getting_disease_type_disgenet()
 def SQL_NID_to_gene_name(_C_code_disease):
     """disease NID 호출"""
-    df_trash = pd.read_excel ("./Data/Disease/disease_index(Id_to_NID).xls")
+    df_trash = pd.read_excel ("./Data/Disease/disease_index(Id_to_NID).xlsx")
     df_NID = df_trash.loc[df_trash.diseaseId == _C_code_disease]
     # print(df_NID)
     diseaseNID_index = df_NID.index
