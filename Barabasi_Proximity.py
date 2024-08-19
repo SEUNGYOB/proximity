@@ -7,6 +7,8 @@ import disease_DB
 import preparation
 import time
 import numpy
+from itertools import permutations, combinations
+
 
 """
 Barabasi lab의 reference대로 환경 구축해서 작업하는 파일 
@@ -54,7 +56,7 @@ def Disease_NETWORK (dis_C_code):
 
     return Dis_network
 """Disgenet DB 기반"""
-def get_LCC_Network_set(G):
+def get_LCC_Network_list(G):
     largest_cc = max(nx.connected_components (G), key=len)
     return  list(largest_cc)
 """LCC sub 네트워크를 구성하는 set값을 리턴"""
@@ -191,7 +193,7 @@ def get_separation(network, nodes_from, nodes_to, lengths=None):
 def LCC_network_proximity_calculate(herb, c_code_disease):
 
     try:
-        z = calculate_network_distance (Whole_network_construction(), get_LCC_Network_set (Herb_NETWORK (herb)),get_LCC_Network_set (Disease_NETWORK (c_code_disease)))
+        z = calculate_network_distance (Whole_network_construction(), get_LCC_Network_list (Herb_NETWORK (herb)),get_LCC_Network_list (Disease_NETWORK (c_code_disease)))
     except:
         z = 0
         print("network calculation ERROR")
@@ -200,15 +202,36 @@ def LCC_network_proximity_calculate(herb, c_code_disease):
 """네트워크, 허브이름, 질병 C_code 넣으면 평균 거리를 측정"""
 
 
+######### 강활_염증 Pathway 세부 선정 ##########
+#for i in ["TNFRSF17", "CSF3", "CCR7", "IL1B", "CCR2", "CXCL10", "CXCL8", "LEP", "LEPR", "CCL20", "XCL2", "NGF", "TNFRSF1B", "CXCL1", "TNF", "IL10", "IL17A"
+#           ]:
+#     a = calculate_network_distance(Whole_network_construction(),changing_Gene_name_to_ENSP_ID(Herb_list("강활")),changing_Gene_name_to_ENSP_ID([i]))
+#     print(i,a)
 
 #####시간 측정하는 함수 칸######
 start_time = time.time()
-
-for i in ["TNFRSF17", "CSF3", "CCR7", "IL1B", "CCR2", "CXCL10", "CXCL8", "LEP", "LEPR", "CCL20", "XCL2", "NGF", "TNFRSF1B", "CXCL1", "TNF", "IL10", "IL17A"
-          ]:
-    a = calculate_network_distance(Whole_network_construction(),changing_Gene_name_to_ENSP_ID(Herb_list("강활")),changing_Gene_name_to_ENSP_ID(i))
-    print(i,a)
+#
 end = time.time()
 print(f"{end - start_time:.5f} sec")
 
 """시간측정"""
+
+
+def Dis_skin_LCC_List_from_xlsx(_file_path):
+    Dis_list = pd.read_excel(_file_path)["all shared genes"].tolist()
+    dis_LCC = get_LCC_Network_list(Dis_list)
+    return dis_LCC
+
+
+####### 탄력약침 - 약물 조합관계 분석 #######
+
+file_50_path = "./Project/Skin_Aging/skin_aging(50).xlsx"
+file_150_path = "./Project/Skin_Aging/skin_aging(150).xlsx"
+
+"""Skin aging 관련 data 생성, 약재는 총 10가지 (담두시(두시), 천화분(괄루근), 구기자, 인삼, 육종용, 백지, 금은화, 천마, 건율, 부자, 국화)"""
+Herb_candidates_list = ["인삼","두시", "괄루근", "구기자","육종용", "백지", "금은화", "천마", "건율", "부자", "국화"]
+combination_list = list(combinations(Herb_candidates_list,2))
+
+for i in combination_list:
+    for d in [file_50_path, file_150_path]:
+        get_separation(Whole_network_construction(),Herb_list("강활"),Dis_skin_LCC_List_from_xlsx(d))

@@ -1,10 +1,6 @@
 import pandas as pd
 import networkx as nx
-import requests
-import network_construction_from_string
-import network_construction_from_string
 import disease_DB
-import preparation
 import time
 import numpy
 
@@ -208,3 +204,5 @@ start_time = time.time()
 """강활과 골관절염 proximity 비교"""
 print("--- %s seconds ---" % (time.time() - start_time))
 """시간측정"""
+
+
