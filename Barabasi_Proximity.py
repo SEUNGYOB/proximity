@@ -227,7 +227,7 @@ def get_degree_binning(g, bin_size, lengths=None):
         else:
              bins.append((low, high, val))
     return bins
-def get_degree_equivalents(seeds, bins, g):
+def get_degree_equivalents(seeds: object, bins: object, g: object) -> object:
     seed_to_nodes = {}
     for seed in seeds:
         d = g.degree(seed)
@@ -252,7 +252,7 @@ def pick_random_nodes_matching_selected(network, bins, nodes_selected, n_random,
                 raise ValueError("Not implemented!")
             nodes_random = set()
             node_to_equivalent_nodes = get_degree_equivalents(nodes_selected, bins, network)
-            for node, equivalent_nodes in node_to_equivalent_nodes.iteritems():
+            for node, equivalent_nodes in node_to_equivalent_nodes.items():
                 #nodes_random.append(random.choice(equivalent_nodes))
                 chosen = random.choice(equivalent_nodes)
                 for k in range(20): # Try to find a distinct node (at most 20 times)
@@ -293,6 +293,8 @@ def get_separation(network, nodes_from, nodes_to, lengths=None):
     dAB = numpy.mean(get_separation_between_sets(network, nodes_from, nodes_to, lengths))
     d = dAB - (dAA + dBB) / 2.0
     return d
+
+"""네트워크, 허브이름, 질병 C_code 넣으면 평균 거리를 측정"""
 def LCC_network_proximity_calculate(herb, c_code_disease):
 
     try:
@@ -302,7 +304,6 @@ def LCC_network_proximity_calculate(herb, c_code_disease):
         print("network calculation ERROR")
 
     return z
-"""네트워크, 허브이름, 질병 C_code 넣으면 평균 거리를 측정"""
 def calculate_proximity(network, nodes_from, nodes_to, nodes_from_random=None, nodes_to_random=None, bins=None, n_random=1000, min_bin_size=100, seed=452456, lengths=None, distance="closest"):
     """
     Calculate proximity from nodes_from to nodes_to
@@ -341,28 +342,24 @@ def calculate_proximity(network, nodes_from, nodes_to, nodes_from_random=None, n
         z = (d - m) / s
     return d, z, (m, s) #(z, pval)
 
-######### 강활_염증 Pathway 세부 선정 ##########
-for i in ["TNFRSF17", "CSF3", "CCR7", "IL1B", "CCR2", "CXCL10", "CXCL8", "LEP", "LEPR", "CCL20", "XCL2", "NGF", "TNFRSF1B", "CXCL1", "TNF", "IL10", "IL17A"
-          ]:
-    a = calculate_proximity(Whole_network_construction(),changing_Gene_name_to_ENSP_ID(Herb_list("강활")),changing_Gene_name_to_ENSP_ID([i]))
-    print(i,a)
-
-########시간 측정하는 함수 칸######
-start_time = time.time()
-#
-#
-#
-#
-end = time.time()
-print(f"{end - start_time:.5f} sec")
-
+"""엑셀 파일에서 질환-LCC target List를 확보"""
 def Dis_skin_LCC_List_from_xlsx(_file_path):
     Dis_list = pd.read_excel(_file_path)["all shared genes"].tolist()
     # print(Dis_list)
     Dis_list_ENSP = changing_Gene_name_to_ENSP_ID(Dis_list)
     dis_LCC = get_LCC_Network_list(Dis_list_ENSP)
     return dis_LCC
-"""엑셀 파일에서 질환-LCC target List를 확보"""
+
+
+
+
+######### 강활_염증 Pathway 세부 선정 ##########
+"""
+for i in ["TNFRSF17", "CSF3", "CCR7", "IL1B", "CCR2", "CXCL10", "CXCL8", "LEP", "LEPR", "CCL20", "XCL2", "NGF", "TNFRSF1B", "CXCL1", "TNF", "IL10", "IL17A"
+          ]:
+    a = calculate_proximity(Whole_network_construction(),changing_Gene_name_to_ENSP_ID(Herb_list("강활")),changing_Gene_name_to_ENSP_ID([i]))
+    print(i,a)
+"""
 """ skin aging_240821"""
 """
 #############################          탄력약침 - 약물 조합관계 분석          ###########################
@@ -408,3 +405,8 @@ for i in combination_list:
 Dis_df = pd.DataFrame ({'A': a, 'B': b, 'Separation Score' : c})
 Dis_df.to_excel("탄력약침_skin_aging.xlsx")
 """
+
+############## 강활_염증 Pathway 세부 선정 (염증인자들과의 거리 비교)##########
+z = calculate_proximity(Whole_network_construction(),["9606.ENSP00000000233","9606.ENSP00000363232"], ["9606.ENSP00000000233","9606.ENSP00000300935"])
+
+print(z)
