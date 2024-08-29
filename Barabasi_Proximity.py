@@ -1,7 +1,7 @@
 import pandas as pd
 import networkx as nx
 import random, copy
-
+import TM_MC
 import disease_DB
 import time
 import numpy
@@ -20,6 +20,10 @@ def Herb_list(_Herb_name):
         print("맞는 이름의 herb가 없는 것 같습니다.")
     return herb_target_list
 """Target Gene의 list 확보"""
+def KIOM_Herb_list(_Herb_name):
+    a = TM_MC.Herb_Target_Protein(_Herb_name)
+    return changing_Gene_name_to_ENSP_ID(a)
+
 def changing_Gene_name_to_ENSP_ID(Gene_list):
     chemical_protein_index = pd.read_csv("./Data/Disease/protein_dict.csv")
     ENSP_code_of_protein = []
@@ -54,7 +58,7 @@ def Disease_protein_list(_c_code_of_disease):
     d = disease_DB.changing_Gene_name_to_ENSP_ID(_c_code_of_disease)
     return d
 # print(Disease_protein_list("C0409959"))
-"""Disgenet DB 활용"""
+"""Disgenet DB 활용, ENSP ID 출력"""
 
 
 """
@@ -406,7 +410,15 @@ Dis_df = pd.DataFrame ({'A': a, 'B': b, 'Separation Score' : c})
 Dis_df.to_excel("탄력약침_skin_aging.xlsx")
 """
 
-############## 강활_염증 Pathway 세부 선정 (염증인자들과의 거리 비교)##########
-z = calculate_proximity(Whole_network_construction(),["9606.ENSP00000000233","9606.ENSP00000363232"], ["9606.ENSP00000000233","9606.ENSP00000300935"])
+############## 강활_염증 Network Module과 염증 인자들과의 거리를 측정. Pathway 세부 선정 (염증인자들과의 거리 비교)##########
 
-print(z)
+Herb_1_LCC_list =  get_LCC_Network_list(changing_Gene_name_to_ENSP_ID(KIOM_Herb_list("강활")))
+Disease_LCC_list = get_LCC_Network_list(Disease_NETWORK("C0409959"))
+HERB_DISEASE_intersection_module_LCC_list = get_LCC_Network_list(list(set(Herb_1_LCC_list) & set(Disease_LCC_list)))
+print(len(HERB_DISEASE_intersection_module_LCC_list))
+
+for i in ["TNFRSF17", "CSF3", "CCR7", "IL1B", "CCR2", "CXCL10", "CXCL8", "LEP", "LEPR", "CCL20", "XCL2", "NGF", "TNFRSF1B", "CXCL1", "TNF", "IL10", "IL17A"
+          ]:
+    a = calculate_proximity(Whole_network_construction(),HERB_DISEASE_intersection_module_LCC_list,changing_Gene_name_to_ENSP_ID([i]))
+    print(i,a)
+
