@@ -1,7 +1,6 @@
 import sqlite3
 import pandas as pd
 import network_construction_from_string
-import time
 
 def getting_disease_type_disgenet():
     data = pd.read_csv("./Data/Disease/disease_associations.csv")
@@ -11,41 +10,40 @@ def getting_disease_type_disgenet():
     disease_list_disgenet = data_1.tolist()
     return disease_list_disgenet
 """list type으로 disgenet에 존재하는 "disease"로 분류된 질병 코드를 반환(CXXXXXXX 형식), NofGenes 가 300개 초과인 것들 """
-def disgenet_SQL_Datafrme_NID():
+# def disgenet_SQL_Datafrme_NID():
+#
+#     """엑셀로 저장"""
+#     conn = sqlite3.connect("./Data/Disease/disgenet_2020.db")
+#     cur = conn.cursor()
+#
+#     #table 호출
+#     # cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
+#     # print(cur.fetchall())
+#     # [('diseaseAttributes',), ('diseaseClass',), ('disease2class',), ('geneAttributes',), ('geneDiseaseNetwork',), ('variantAttributes',), ('variantGene',), ('variantDiseaseNetwork',)]
+#
+#     result = cur.execute("SELECT * FROM diseaseAttributes;")
+#     rows = cur.fetchall()
+#     cols = [column[0] for column in cur.description]
+#
+#     data_df = pd.DataFrame.from_records(data=rows, columns=cols)
+#     # print(data_df.head())
+#     data_df_wanted_list_1=[]
+#     df_trash = pd.DataFrame()
+#     for diseaseIds in getting_disease_type_disgenet():
+#
+#         data_df_wanted_C_to_N = data_df.loc[data_df.diseaseId == diseaseIds]
+#
+#         df_trash = pd.concat([df_trash, data_df_wanted_C_to_N], ignore_index=True)
+#     #     data_df_wanted_list = data_df_wanted_C_to_N["diseaseNID"].tolist()
+#     #     data_df_wanted_list_1.extend(data_df_wanted_list)
+#     # data_df_wanted_list = list(set(data_df_wanted_list_1))
+#     df_trash.to_excel("disease_index(Id_to_NID).xlsx")
+#     # diseaseNID = df_trash.loc[df_trash.diseaseId == _C_code_of_disease]["diseaseNID"]
+#
+#     conn.close ()
+#     return
+# """역할을 다 한 함수 disease_index(Id_to_NID).xlsx 생성"""
 
-    """엑셀로 저장"""
-    conn = sqlite3.connect("./Data/Disease/disgenet_2020.db")
-    cur = conn.cursor()
-
-    #table 호출
-    # cur.execute("SELECT name FROM sqlite_master WHERE type='table';")
-    # print(cur.fetchall())
-    # [('diseaseAttributes',), ('diseaseClass',), ('disease2class',), ('geneAttributes',), ('geneDiseaseNetwork',), ('variantAttributes',), ('variantGene',), ('variantDiseaseNetwork',)]
-
-    result = cur.execute("SELECT * FROM diseaseAttributes;")
-    rows = cur.fetchall()
-    cols = [column[0] for column in cur.description]
-
-    data_df = pd.DataFrame.from_records(data=rows, columns=cols)
-    # print(data_df.head())
-    data_df_wanted_list_1=[]
-    df_trash = pd.DataFrame()
-    for diseaseIds in getting_disease_type_disgenet():
-
-        data_df_wanted_C_to_N = data_df.loc[data_df.diseaseId == diseaseIds]
-
-        df_trash = pd.concat([df_trash, data_df_wanted_C_to_N], ignore_index=True)
-    #     data_df_wanted_list = data_df_wanted_C_to_N["diseaseNID"].tolist()
-    #     data_df_wanted_list_1.extend(data_df_wanted_list)
-    # data_df_wanted_list = list(set(data_df_wanted_list_1))
-    df_trash.to_excel("disease_index(Id_to_NID).xlsx")
-    # diseaseNID = df_trash.loc[df_trash.diseaseId == _C_code_of_disease]["diseaseNID"]
-
-    conn.close ()
-    return
-"""역할을 다 한 함수 disease_index(Id_to_NID).xlsx 생성"""
-
-disgenet_SQL_Datafrme_NID()
 def geneNID_to_gene_excel():
     conn = sqlite3.connect ("./Data/Disease/disgenet_2020.db")
     cur = conn.cursor ()
@@ -141,13 +139,3 @@ def Disease_dataFrame_from_C_code (_C_code_disease):
 """최종적으로 질병의 C code를 넣으면 Network를 구성하는 nodes들의 정보를 담고 있는 dataframe을 return한다.
 쓸모 없음(STRING DB에서는 갯수 제한)"""
 
-# print(Disease_dataFrame_from_C_code(C_code_disease))
-
-
-start_time = time.time()
-# print(changing_Gene_name_to_ENSP_ID("C0409959"))
-
-# print(calculate_closest_distance(Whole_network_construction(),Herb_list("강활"), Disease_protein_list("C0409959")))
-
-print("--- %s seconds ---" % (time.time() - start_time))
-"""시간측정"""

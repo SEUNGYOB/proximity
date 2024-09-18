@@ -1,6 +1,6 @@
 import pandas as pd
 
-### SY DB 기준으로 HERB의 Target Data 불러옴 ###
+### KIOM_DB 기준으로 HERB의 Target Data 불러옴 ###
 
 def change_korean_to_Latin(korean_herb_name):
     dir = './Data/Herb/KIOM_DB/medicinal_material.xlsx'
@@ -48,17 +48,33 @@ def ID_to_Protein(_filtered_Comp_ID_list):
     protein = pd.read_excel(dir_3)
     protein_mod2 = []
     for i in _filtered_Comp_ID_list:
-        protein_mod1 = protein[protein["ID"] == i]["PREFERRED_NAME"]
+        protein_mod1 = protein[protein["ID"] == i]["PROTEINID"]
         protein_mod1 = protein_mod1.tolist()
         protein_mod2 = list(set(protein_mod2 + protein_mod1))
-
+    a_1=[]
+    for i in protein_mod2:
+        a ="9606."+ i
+        a_1 = a_1 + [a]
     print("Target Protein 확보 완료")
-    print(protein_mod2)
-    return protein_mod2
+    print(a_1)
+    return a_1
 def Herb_Target_Protein(_herb_name):
     a = ID_to_Protein(ADME_Filtering(Latin_to_CompoundID(change_korean_to_Latin(_herb_name))))
 
     print("Herb List 확보 최종 완료")
     print(len(a), a)
     return a
-# Herb_Target_Protein("인삼")
+"""9606.ENSP 출력"""
+def Dis_Target_Protein(_c_code):
+    dir = "./Data/Herb/KIOM_DB/protein_disease.xlsx"
+    df= pd.read_excel(dir)
+    df_1=df[df["DISEASEID"] == _c_code]["PROTEIN"]
+    a_1=[]
+    for i in df_1.tolist():
+        a = "9606." +i
+        a_1 = a_1 + [a]
+    print("질병",a_1)
+
+    return a_1
+"""9606.ENSP 출력"""
+### Barabasi_DB 기준으로 HERB의 Target Data 불러옴 ###

@@ -6,41 +6,25 @@ import disease_DB
 import time
 import numpy
 from itertools import combinations
-
-
-"""
-Barabasi lab의 reference대로 환경 구축해서 작업하는 파일 
-"""
-def Herb_list(_Herb_name):
-    try:
-        a = pd.read_excel("./Data/Herb/Barabasi/TCM_Herb_Barabasi.xlsx")
-        herb_target_list = a[a["Korean_name"] == _Herb_name]["Gene Symbol"].tolist()
-        # print(_Herb_name + "의 타겟 gene은", herb_target_list)
-    except:
-        print("맞는 이름의 herb가 없는 것 같습니다.")
-    return herb_target_list
-"""Target Gene의 list 확보"""
-def KIOM_Herb_list(_Herb_name):
-    a = TM_MC.Herb_Target_Protein(_Herb_name)
-    return changing_Gene_name_to_ENSP_ID(a)
+from varname import nameof
 
 def changing_Gene_name_to_ENSP_ID(Gene_list):
     chemical_protein_index = pd.read_csv("./Data/Disease/protein_dict.csv")
     ENSP_code_of_protein = []
     Gene_error_list = []
     for Gene_names in Gene_list:
-        ENSP_code_of_protein_1 = chemical_protein_index.loc[chemical_protein_index.preferred_name == Gene_names]["#string_protein_id"].tolist()
+        ENSP_code_of_protein_1 = chemical_protein_index[chemical_protein_index["preferred_name"] == Gene_names]["#string_protein_id"].tolist()
         # print(ENSP_code_of_protein_1)
         try :
-            ENSP_code_of_protein_1 = ENSP_code_of_protein_1[0]
+            ENSP_code_of_protein_1 = ENSP_code_of_protein_1
             # print (ENSP_code_of_protein_1)
-            ENSP_code_of_protein = [ENSP_code_of_protein_1] + ENSP_code_of_protein
+            ENSP_code_of_protein = ENSP_code_of_protein_1 + ENSP_code_of_protein
             # print (ENSP_code_of_protein)
         except :
             Gene_error_list = [Gene_names] + Gene_error_list
             df_1 = pd.read_excel("./Data/Disease/error_gene_list.xlsx")
-            _error_list = df_1["Error_List"].tolist()
-            _error_list = _error_list + Gene_error_list
+            _error_list = list(set(df_1["Error_List"].tolist()))
+            _error_list = list(set(_error_list + Gene_error_list))
             df= pd.DataFrame({
                "Error_List":  _error_list
             })
@@ -54,6 +38,18 @@ def changing_Gene_name_to_ENSP_ID(Gene_list):
     # print(ENSP_code_of_protein)
     return ENSP_code_of_protein
 """COL1A1 -> ENSP.0010204으로 변경하는 함수"""
+def Barabsi_Herb_list(_Herb_name):
+    try:
+        a = pd.read_excel("./Data/Herb/Barabasi/TCM_Herb_Barabasi.xlsx")
+        herb_target_list = a[a["Korean_name"] == _Herb_name]["Gene Symbol"].tolist()
+        # print(_Herb_name + "의 타겟 gene은", herb_target_list)
+    except:
+        print("맞는 이름의 herb가 없는 것 같습니다.")
+    return changing_Gene_name_to_ENSP_ID(herb_target_list)
+"""9606.ENSP 출력 list 확보"""
+def KIOM_Herb_list(_Herb_name):
+    a = TM_MC.Herb_Target_Protein(_Herb_name)
+    return a
 def Disease_protein_list(_c_code_of_disease):
     d = disease_DB.changing_Gene_name_to_ENSP_ID(_c_code_of_disease)
     return d
@@ -62,10 +58,10 @@ def Disease_protein_list(_c_code_of_disease):
 
 
 """
-                                        Network construction part
+               Network construction part
 """
 def Herb_NETWORK(_herb_name):
-    Herb_netwrok = Whole_network_construction().subgraph(Herb_list(_herb_name))
+    Herb_netwrok = Whole_network_construction().subgraph(Barabsi_Herb_list(_herb_name))
     return Herb_netwrok
 def Disease_NETWORK (dis_C_code):
     Dis_network = Whole_network_construction().subgraph(Disease_protein_list(dis_C_code))
@@ -100,8 +96,7 @@ def overlap_significance(geneids1, geneids2, method = "jaccard"):
     """
     method:  jaccard | jaccard_max
     """
-    n1, n2 = len(geneids1), len(geneids2)
-    n = len(geneids1 & geneids2)
+    n1, n2 = set(geneids1), set(geneids2)
 
 
     if method == "jaccard":
@@ -138,7 +133,7 @@ def calculate_closest_distance(network, nodes_from, nodes_to, lengths=None):
                 values.append (val)
                 d = min (values)
                 values_outer.append (d)
-            d = numpy.mean (values_outer)
+        d = numpy.mean (values_outer)
         # print d
     return d
 def calculate_network_distance(network, nodes_from, nodes_to):
@@ -156,7 +151,7 @@ def calculate_network_distance(network, nodes_from, nodes_to):
 
     d = sum (values) / len (values)
     return d
-"""list 2개의 gene들 사이에서 거리를 측정하여 최소 값을 도출함"""
+"""list 2개의 gene들 사이에서 거리를 측정하여 평균 값을 도출함"""
 def get_separation_between_sets(network, nodes_from, nodes_to, lengths=None):
     """
     Calculate dAB in separation metric proposed by Menche et al. 2015
@@ -323,7 +318,7 @@ def calculate_proximity(network, nodes_from, nodes_to, nodes_from_random=None, n
         lengths = get_shortest_path_length_between(network, "temp_n%d_e%d.sif.pcl" % (len(nodes_network), network.number_of_edges()))
         d = get_separation(network, lengths, nodes_from, nodes_to, distance, parameters = {})
     else:
-        d = calculate_closest_distance(network, nodes_from, nodes_to, lengths)
+        d = calculate_network_distance(network, nodes_from, nodes_to)
     if bins is None and (nodes_from_random is None or nodes_to_random is None):
         bins = get_degree_binning(network, min_bin_size, lengths) # if lengths is given, it will only use those nodes
     if nodes_from_random is None:
@@ -410,15 +405,32 @@ Dis_df = pd.DataFrame ({'A': a, 'B': b, 'Separation Score' : c})
 Dis_df.to_excel("탄력약침_skin_aging.xlsx")
 """
 
-############## 강활_염증 Network Module과 염증 인자들과의 거리를 측정. Pathway 세부 선정 (염증인자들과의 거리 비교)##########
+################# 강활_염증 Network Module과 염증 인자들과의 거리를 측정. Pathway 세부 선정 (염증인자들과의 거리 비교)##########
 
-Herb_1_LCC_list =  get_LCC_Network_list(changing_Gene_name_to_ENSP_ID(KIOM_Herb_list("강활")))
-Disease_LCC_list = get_LCC_Network_list(Disease_NETWORK("C0409959"))
-HERB_DISEASE_intersection_module_LCC_list = get_LCC_Network_list(list(set(Herb_1_LCC_list) & set(Disease_LCC_list)))
-print(len(HERB_DISEASE_intersection_module_LCC_list))
+# Herb_1_list =  Barabsi_Herb_list("강활")
+# Disease_list = TM_MC.Dis_Target_Protein("C0409959")
+# print(Disease_list[0:6],Herb_1_list[0:7])
 
-for i in ["TNFRSF17", "CSF3", "CCR7", "IL1B", "CCR2", "CXCL10", "CXCL8", "LEP", "LEPR", "CCL20", "XCL2", "NGF", "TNFRSF1B", "CXCL1", "TNF", "IL10", "IL17A"
-          ]:
-    a = calculate_proximity(Whole_network_construction(),HERB_DISEASE_intersection_module_LCC_list,changing_Gene_name_to_ENSP_ID([i]))
-    print(i,a)
+# HERB_DISEASE_intersection_module_list = list(set(Herb_1_list) & set(Disease_list))
+# print(len(HERB_DISEASE_intersection_module_list))
 
+# for i in ["TNFRSF17", "CSF3", "CCR7", "IL1B", "CCR2", "CXCL10", "CXCL8", "LEP", "LEPR", "CCL20", "XCL2", "NGF", "TNFRSF1B", "CXCL1", "TNF", "IL10", "IL17A"
+#           ]:
+#     a = calculate_proximity(Whole_network_construction(),HERB_DISEASE_intersection_module_list,changing_Gene_name_to_ENSP_ID([i]))
+#     print(i,a)
+
+############## 강활_염증 Network Module과 염증 인자 family의 거리를 측정. Pathway 세부 선정 (염증인자들과의 거리 비교)##########
+"""
+cytokine_df= pd.read_excel("./Result/OA_강활/cytokine - cytokine receptor interaction.xlsx")
+cytokine_df = cytokine_df.fillna('')
+
+_IL_17 = cytokine_df["IL-17likecytokines"].tolist()
+# print(_IL_17)
+_TNF_Family = cytokine_df["TNF-Asignalingpathway"].tolist()
+
+for i in [ _IL_17,_TNF_Family]:
+    # a = calculate_proximity(Whole_network_construction(),HERB_DISEASE_intersection_module_list,changing_Gene_name_to_ENSP_ID(i))
+    b = calculate_proximity(Whole_network_construction(),Herb_1_list,changing_Gene_name_to_ENSP_ID(i))
+    # print("강활과의 거리는 ", a, "입니다")
+    print("강활 전체 모듈과의 거리는 ", b, "입니다")
+"""
