@@ -7,18 +7,19 @@ import time
 import numpy
 from itertools import combinations
 from varname import nameof
+from collections import defaultdict
 
 def changing_Gene_name_to_ENSP_ID(Gene_list):
     chemical_protein_index = pd.read_csv("./Data/Disease/protein_dict.csv")
     ENSP_code_of_protein = []
     Gene_error_list = []
     for Gene_names in Gene_list:
-        ENSP_code_of_protein_1 = chemical_protein_index[chemical_protein_index["preferred_name"] == Gene_names]["#string_protein_id"].tolist()
+        ENSP_code_of_protein_1 = chemical_protein_index[chemical_protein_index.preferred_name == Gene_names]["#string_protein_id"].tolist()
         # print(ENSP_code_of_protein_1)
         try :
-            ENSP_code_of_protein_1 = ENSP_code_of_protein_1
+            ENSP_code_of_protein_1 = ENSP_code_of_protein_1[0]
             # print (ENSP_code_of_protein_1)
-            ENSP_code_of_protein = ENSP_code_of_protein_1 + ENSP_code_of_protein
+            ENSP_code_of_protein = [ENSP_code_of_protein_1] + ENSP_code_of_protein
             # print (ENSP_code_of_protein)
         except :
             Gene_error_list = [Gene_names] + Gene_error_list
@@ -38,7 +39,7 @@ def changing_Gene_name_to_ENSP_ID(Gene_list):
     # print(ENSP_code_of_protein)
     return ENSP_code_of_protein
 """COL1A1 -> ENSP.0010204으로 변경하는 함수"""
-def Barabsi_Herb_list(_Herb_name):
+def Barabasi_Herb_list(_Herb_name):
     try:
         a = pd.read_excel("./Data/Herb/Barabasi/TCM_Herb_Barabasi.xlsx")
         herb_target_list = a[a["Korean_name"] == _Herb_name]["Gene Symbol"].tolist()
@@ -61,7 +62,7 @@ def Disease_protein_list(_c_code_of_disease):
                Network construction part
 """
 def Herb_NETWORK(_herb_name):
-    Herb_netwrok = Whole_network_construction().subgraph(Barabsi_Herb_list(_herb_name))
+    Herb_netwrok = Whole_network_construction().subgraph(Barabasi_Herb_list(_herb_name))
     return Herb_netwrok
 def Disease_NETWORK (dis_C_code):
     Dis_network = Whole_network_construction().subgraph(Disease_protein_list(dis_C_code))
@@ -113,29 +114,29 @@ def get_shortest_path_length_between(G, source_id, target_id):
         d = 0
     return d
 """네트워크에서 두 노드간의 거리를 측정하는 함수"""
-def calculate_closest_distance(network, nodes_from, nodes_to, lengths=None):
-    values_outer = []
-    if lengths is None:
-        for node_from in nodes_from:
-            values = []
-            for node_to in nodes_to:
-                val = get_shortest_path_length_between (network, node_from, node_to)
-                values.append (val)
-                d = min (values)
-                # print d,
-                values_outer.append (d)
-    else:
-        for node_from in nodes_from:
-            values = []
-            vals = lengths[node_from]
-            for node_to in nodes_to:
-                val = vals[node_to]
-                values.append (val)
-                d = min (values)
-                values_outer.append (d)
-        d = numpy.mean (values_outer)
-        # print d
-    return d
+def calculate_closest_distance(network, nodes_from, nodes_to):
+    ds = defaultdict(dict)
+
+    for i in nodes_from:
+        for j in nodes_to:
+            if i == j:
+                ds[i][j] = 0
+            else:
+                if nx.has_path (network, i, j):
+                    ds[i][j] = nx.shortest_path_length (network, i, j)
+                else:
+                    ds[i][j] = float ('nan')
+
+    ds = pd.DataFrame.from_dict (ds)
+    # nodes_to: rows
+    # nodes_from: columns
+
+    dic = {}
+
+    dic['shortest'] = ds.mean().mean()
+    dic['closest'] = ds.min().mean()
+    return (dic)
+
 def calculate_network_distance(network, nodes_from, nodes_to):
     values_outer = []
     try:
@@ -303,43 +304,53 @@ def LCC_network_proximity_calculate(herb, c_code_disease):
         print("network calculation ERROR")
 
     return z
-def calculate_proximity(network, nodes_from, nodes_to, nodes_from_random=None, nodes_to_random=None, bins=None, n_random=1000, min_bin_size=100, seed=452456, lengths=None, distance="closest"):
+def calculate_proximity(network, nodes_from, nodes_to, nodes_from_random=None, nodes_to_random=None, bins=None, n_random=1000, min_bin_size=100, seed=452456, lengths=None):
     """
     Calculate proximity from nodes_from to nodes_to
     If degree binning or random nodes are not given, they are generated
     lengths: precalculated shortest path length dictionary
     """
-    nodes_network = set(network.nodes())
-    nodes_from = set(nodes_from) & nodes_network
-    nodes_to = set(nodes_to) & nodes_network
-    if len(nodes_from) == 0 or len(nodes_to) == 0:
-        return None # At least one of the node group not in network
-    if distance != "closest":
-        lengths = get_shortest_path_length_between(network, "temp_n%d_e%d.sif.pcl" % (len(nodes_network), network.number_of_edges()))
-        d = get_separation(network, lengths, nodes_from, nodes_to, distance, parameters = {})
-    else:
-        d = calculate_network_distance(network, nodes_from, nodes_to)
-    if bins is None and (nodes_from_random is None or nodes_to_random is None):
-        bins = get_degree_binning(network, min_bin_size, lengths) # if lengths is given, it will only use those nodes
-    if nodes_from_random is None:
-        nodes_from_random = get_random_nodes(nodes_from, network, bins = bins, n_random = n_random, min_bin_size = min_bin_size, seed = seed)
-    if nodes_to_random is None:
-        nodes_to_random = get_random_nodes(nodes_to, network, bins = bins, n_random = n_random, min_bin_size = min_bin_size, seed = seed)
-        random_values_list = zip(nodes_from_random, nodes_to_random)
-        values = numpy.empty(len(nodes_from_random)) #n_random
-    for i, values_random in enumerate(random_values_list):
-        nodes_from, nodes_to = values_random
-        if distance != "closest":
-            values[i] = get_separation(network, lengths, nodes_from, nodes_to, distance, parameters = {})
-        else:
-            values[i] = calculate_closest_distance(network, nodes_from, nodes_to, lengths)
-    #pval = float(sum(values <= d)) / len(values) # needs high number of n_random
-    m, s = numpy.mean(values), numpy.std(values)
-    if s == 0:
-        z = 0.0
-    else:
-        z = (d - m) / s
-    return d, z, (m, s) #(z, pval)
+    nodes_network = set (network.nodes ())
+    if len (set (nodes_from) & nodes_network) == 0 or len (set (nodes_to) & nodes_network) == 0:
+        return None  # At least one of the node group not in network
+
+    d = calculate_closest_distance (network, nodes_from, nodes_to)
+
+    if n_random:
+
+        if bins is None and (nodes_from_random is None or nodes_to_random is None):
+            bins = get_degree_binning (network, min_bin_size,
+                                       lengths)  # if lengths is given, it will only use those nodes
+        if nodes_from_random is None:
+            nodes_from_random = get_random_nodes (nodes_from, network, bins=bins, n_random=n_random,
+                                                  min_bin_size=min_bin_size, seed=seed)
+        if nodes_to_random is None:
+            nodes_to_random = get_random_nodes (nodes_to, network, bins=bins, n_random=n_random,
+                                                min_bin_size=min_bin_size, seed=seed)
+        random_values_list = list (zip (nodes_from_random, nodes_to_random))
+        # values = np.empty(len(nodes_from_random)) #n_random
+        null = []
+        for i, values_random in enumerate(random_values_list):
+            nodes_from, nodes_to = values_random
+            res = calculate_closest_distance(network, nodes_from, nodes_to)
+            null.append(res)
+
+        null_s = []
+        null_c = []
+        for i in range (len (null)):
+            null_s.append (null[i]['shortest'])
+            null_c.append (null[i]['closest'])
+
+        with numpy.errstate (divide='ignore', invalid='ignore'):
+
+            d['avg_shortest'], d['std_shortest'] = numpy.mean (null_s), numpy.std (null_s)
+            d['z_shortest'] = (d['shortest'] - d['avg_shortest']) / d['std_shortest']
+
+            d['avg_closest'], d['std_closest'] = numpy.mean (null_c), numpy.std (null_c)
+            d['z_closest'] = (d['closest'] - d['avg_closest']) / d['std_closest']
+
+
+    return (d)
 
 """엑셀 파일에서 질환-LCC target List를 확보"""
 def Dis_skin_LCC_List_from_xlsx(_file_path):
@@ -348,89 +359,3 @@ def Dis_skin_LCC_List_from_xlsx(_file_path):
     Dis_list_ENSP = changing_Gene_name_to_ENSP_ID(Dis_list)
     dis_LCC = get_LCC_Network_list(Dis_list_ENSP)
     return dis_LCC
-
-
-
-
-######### 강활_염증 Pathway 세부 선정 ##########
-"""
-for i in ["TNFRSF17", "CSF3", "CCR7", "IL1B", "CCR2", "CXCL10", "CXCL8", "LEP", "LEPR", "CCL20", "XCL2", "NGF", "TNFRSF1B", "CXCL1", "TNF", "IL10", "IL17A"
-          ]:
-    a = calculate_proximity(Whole_network_construction(),changing_Gene_name_to_ENSP_ID(Herb_list("강활")),changing_Gene_name_to_ENSP_ID([i]))
-    print(i,a)
-"""
-""" skin aging_240821"""
-"""
-#############################          탄력약침 - 약물 조합관계 분석          ###########################
-
-file_50_path = "./Project/Skin_Aging/skin_aging(50).xlsx"
-file_150_path = "./Project/Skin_Aging/skin_aging(150).xlsx"
-
-# # get_separation(Whole_network_construction(),get_LCC_Network_list(changing_Gene_name_to_ENSP_ID(Herb_list ("인삼"))),get_LCC_Network_list(changing_Gene_name_to_ENSP_ID(Herb_list ("두시"))))
-# print(get_separation(Whole_network_construction(), t_list_1,t_list_2))
-# print(separation_score_1)
-
-
-Skin aging 관련 data 생성, 약재는 총 10가지 (담두시(두시, 제외), 천화분(과루), 구기자(구기), 인삼, 육종용, 백지, 금은화(인동등), 천마, 건율, 부자, 국화)
-Herb_candidates_list = ["인삼", "과루", "구기","육종용", "백지", "인동등", "천마", "생부자", "국화"]
-combination_list = list(combinations(Herb_candidates_list,2))
-a=[]
-b=[]
-c=[]
-for i in combination_list:
-    # print(type(i[0]),i[1]) #i[0] : str type
-    # print(Herb_list(i[0]))
-    for d in [file_50_path, file_150_path]:
-
-        H_list_1 = get_LCC_Network_list(changing_Gene_name_to_ENSP_ID(Herb_list (i[0])))
-        H_list_2 = get_LCC_Network_list(changing_Gene_name_to_ENSP_ID(Herb_list (i[1])))
-        D_List  = Dis_skin_LCC_List_from_xlsx(d)
-
-        # print(H_list_1, H_list_2)
-        separation_score_1 = get_separation(Whole_network_construction(),H_list_1,H_list_2)
-        separation_score_2 = get_separation(Whole_network_construction(),H_list_1,D_List)
-        separation_score_3 = get_separation(Whole_network_construction(),H_list_2,D_List)
-
-        a.append(i[0])
-        a.append(i[0])
-        a.append(i[1])
-        b.append(i[1])
-        b.append(d)
-        b.append(d)
-        c.append(separation_score_1)
-        c.append(separation_score_2)
-        c.append(separation_score_3)
-
-Dis_df = pd.DataFrame ({'A': a, 'B': b, 'Separation Score' : c})
-Dis_df.to_excel("탄력약침_skin_aging.xlsx")
-"""
-
-################# 강활_염증 Network Module과 염증 인자들과의 거리를 측정. Pathway 세부 선정 (염증인자들과의 거리 비교)##########
-
-# Herb_1_list =  Barabsi_Herb_list("강활")
-# Disease_list = TM_MC.Dis_Target_Protein("C0409959")
-# print(Disease_list[0:6],Herb_1_list[0:7])
-
-# HERB_DISEASE_intersection_module_list = list(set(Herb_1_list) & set(Disease_list))
-# print(len(HERB_DISEASE_intersection_module_list))
-
-# for i in ["TNFRSF17", "CSF3", "CCR7", "IL1B", "CCR2", "CXCL10", "CXCL8", "LEP", "LEPR", "CCL20", "XCL2", "NGF", "TNFRSF1B", "CXCL1", "TNF", "IL10", "IL17A"
-#           ]:
-#     a = calculate_proximity(Whole_network_construction(),HERB_DISEASE_intersection_module_list,changing_Gene_name_to_ENSP_ID([i]))
-#     print(i,a)
-
-############## 강활_염증 Network Module과 염증 인자 family의 거리를 측정. Pathway 세부 선정 (염증인자들과의 거리 비교)##########
-"""
-cytokine_df= pd.read_excel("./Result/OA_강활/cytokine - cytokine receptor interaction.xlsx")
-cytokine_df = cytokine_df.fillna('')
-
-_IL_17 = cytokine_df["IL-17likecytokines"].tolist()
-# print(_IL_17)
-_TNF_Family = cytokine_df["TNF-Asignalingpathway"].tolist()
-
-for i in [ _IL_17,_TNF_Family]:
-    # a = calculate_proximity(Whole_network_construction(),HERB_DISEASE_intersection_module_list,changing_Gene_name_to_ENSP_ID(i))
-    b = calculate_proximity(Whole_network_construction(),Herb_1_list,changing_Gene_name_to_ENSP_ID(i))
-    # print("강활과의 거리는 ", a, "입니다")
-    print("강활 전체 모듈과의 거리는 ", b, "입니다")
-"""
